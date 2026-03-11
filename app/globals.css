@@ -1,4 +1,4 @@
-@import "tailwindcss";
+/* @import "tailwindcss";
 
 :root {
   --background: #ffffff;
@@ -23,4 +23,212 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+} */
+
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap');
+
+:root {
+  --bg: #0a0a0f;
+  --surface: #111118;
+  --surface2: #1a1a24;
+  --border: #2a2a3a;
+  --text: #e8e8f0;
+  --muted: #6b6b80;
+  --accent-edge: #f59e0b;      /* Amber — Edge Functions */
+  --accent-static: #10b981;    /* Green — SSG/ISR */
+  --accent-server: #6366f1;    /* Indigo — Serverless */
+  --accent-ai: #ec4899;        /* Pink — AI/Fluid Compute */
+  --accent-white: #ffffff;
+  --font-display: 'Syne', sans-serif;
+  --font-mono: 'Space Mono', monospace;
 }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-display);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* Noise texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.4;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Typography */
+h1, h2, h3, h4 { font-family: var(--font-display); line-height: 1.15; }
+
+code, pre { font-family: var(--font-mono); }
+
+a { color: inherit; text-decoration: none; }
+
+/* Compute layer badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid;
+}
+
+.badge-static  { color: var(--accent-static); border-color: var(--accent-static); background: rgba(16,185,129,0.08); }
+.badge-edge    { color: var(--accent-edge);   border-color: var(--accent-edge);   background: rgba(245,158,11,0.08); }
+.badge-server  { color: var(--accent-server); border-color: var(--accent-server); background: rgba(99,102,241,0.08); }
+.badge-ai      { color: var(--accent-ai);     border-color: var(--accent-ai);     background: rgba(236,72,153,0.08); }
+
+/* Glow pulse animation for live badges */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Card */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px;
+}
+
+/* Code block */
+.code-block {
+  background: #080810;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* Comment */
+.code-block .comment { color: #4a4a6a; }
+.code-block .keyword { color: var(--accent-server); }
+.code-block .string  { color: var(--accent-static); }
+.code-block .func    { color: var(--accent-edge); }
+.code-block .layer-label {
+  display: inline-block;
+  background: rgba(245,158,11,0.15);
+  color: var(--accent-edge);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  margin-bottom: 8px;
+}
+
+/* Layout utilities */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.page-header {
+  padding: 80px 0 48px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 48px;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+}
+
+/* Compute layer left border accent */
+.layer-static  { border-left: 3px solid var(--accent-static); padding-left: 20px; }
+.layer-edge    { border-left: 3px solid var(--accent-edge);   padding-left: 20px; }
+.layer-server  { border-left: 3px solid var(--accent-server); padding-left: 20px; }
+.layer-ai      { border-left: 3px solid var(--accent-ai);     padding-left: 20px; }
+
+/* Button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid;
+  transition: all 0.15s ease;
+  background: transparent;
+}
+
+.btn-static  { color: var(--accent-static); border-color: var(--accent-static); }
+.btn-static:hover  { background: rgba(16,185,129,0.12); }
+
+.btn-edge    { color: var(--accent-edge);   border-color: var(--accent-edge); }
+.btn-edge:hover    { background: rgba(245,158,11,0.12); }
+
+.btn-server  { color: var(--accent-server); border-color: var(--accent-server); }
+.btn-server:hover  { background: rgba(99,102,241,0.12); }
+
+.btn-ai      { color: var(--accent-ai);     border-color: var(--accent-ai); }
+.btn-ai:hover      { background: rgba(236,72,153,0.12); }
+
+/* Stats / info rows */
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.info-row:last-child { border-bottom: none; }
+.info-label { color: var(--muted); font-family: var(--font-mono); font-size: 12px; }
+.info-value { color: var(--text); font-weight: 600; }
+
+/* Fade in animation */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp 0.4s ease forwards; }
+.fade-up-delay-1 { animation-delay: 0.1s; opacity: 0; }
+.fade-up-delay-2 { animation-delay: 0.2s; opacity: 0; }
+.fade-up-delay-3 { animation-delay: 0.3s; opacity: 0; }

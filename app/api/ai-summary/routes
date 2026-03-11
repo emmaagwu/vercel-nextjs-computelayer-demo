@@ -1,0 +1,170 @@
+/**
+ * ============================================================
+ * COMPUTE LAYER: SERVERLESS FUNCTION + FLUID COMPUTE
+ * ============================================================
+ * This endpoint demonstrates the AI workload pattern that
+ * makes Fluid Compute transformative.
+ *
+ * THE PROBLEM WITH TRADITIONAL SERVERLESS FOR AI:
+ *  - You call an LLM (OpenAI/Anthropic)
+ *  - Your function WAITS 10-30 seconds for the response
+ *  - Traditional serverless: you pay for ALL 30 seconds
+ *  - But your CPU is doing NOTHING during those 30 seconds
+ *  - 95% of the cost is wasted on waiting
+ *
+ * FLUID COMPUTE SOLUTION:
+ *  - Multiple requests can share one compute instance
+ *  - While request A waits for OpenAI, request B runs on same instance
+ *  - You pay only for ACTIVE CPU time (milliseconds), not wait time
+ *  - Result: AI workloads cost up to 85% less on Vercel
+ *
+ * STREAMING:
+ *  - Instead of waiting for the full LLM response, we stream tokens
+ *  - First token appears in ~500ms instead of user waiting 10-30s
+ *  - This is enabled by the Vercel AI SDK's streamText()
+ *
+ * VERCEL AI SDK:
+ *  - Handles streaming protocol (text/event-stream)
+ *  - Works with 20+ LLM providers via unified API
+ *  - toDataStreamResponse() formats output for use with useChat() hook
+ * ============================================================
+ */
+
+import { NextRequest, NextResponse } from "next/server";
+
+// In a real app:
+// import { streamText } from 'ai';
+// import { openai } from '@ai-sdk/openai';
+// import { anthropic } from '@ai-sdk/anthropic';
+
+export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+
+  try {
+    const { article } = await request.json();
+
+    if (!article) {
+      return NextResponse.json({ error: "Article text required" }, { status: 400 });
+    }
+
+    // ─────────────────────────────────────────────────────
+    // REAL IMPLEMENTATION (commented out — requires API key)
+    // ─────────────────────────────────────────────────────
+    //
+    // const result = await streamText({
+    //   model: openai('gpt-4o-mini'),  // or anthropic('claude-haiku-4-5-20251001')
+    //   system: `You are a tech journalist. Summarize articles in 3 bullet points.
+    //            Be concise. Focus on implications for developers.`,
+    //   messages: [
+    //     { role: 'user', content: `Summarize this article:\n\n${article}` }
+    //   ],
+    //   maxTokens: 300,
+    //
+    //   // onChunk fires for every token streamed
+    //   onChunk: ({ chunk }) => {
+    //     console.log('[AI] Token:', chunk);
+    //   },
+    //
+    //   // onFinish fires when streaming completes
+    //   onFinish: ({ usage, finishReason }) => {
+    //     console.log('[AI] Tokens used:', usage.totalTokens);
+    //     console.log('[AI] Finish reason:', finishReason);
+    //   },
+    // });
+    //
+    // // toDataStreamResponse() creates a streaming HTTP response
+    // // compatible with the useChat() hook on the client
+    // return result.toDataStreamResponse();
+    //
+    // ─────────────────────────────────────────────────────
+
+    // DEMO SIMULATION: Streams a fake AI response token by token
+    // This shows the streaming pattern without needing an API key
+    const summary = generateDemoSummary(article);
+    const tokens = summary.split(" ");
+
+    // Create a ReadableStream that drips tokens one by one
+    // This is exactly what the Vercel AI SDK does under the hood
+    const stream = new ReadableStream({
+      async start(controller) {
+        const encoder = new TextEncoder();
+
+        // Send metadata header first
+        const metadata = JSON.stringify({
+          computeLayer: "serverless-function",
+          fluidCompute: true,
+          streaming: true,
+          note: "While waiting for tokens, Fluid Compute shares this instance with other requests",
+          timestamp: new Date().toISOString(),
+        });
+        controller.enqueue(encoder.encode(`data: ${metadata}\n\n`));
+
+        // Stream tokens with simulated LLM delay between each
+        // Real LLMs stream at ~30-50 tokens/second
+        for (let i = 0; i < tokens.length; i++) {
+          const token = tokens[i] + (i < tokens.length - 1 ? " " : "");
+          const chunk = JSON.stringify({ token, index: i, total: tokens.length });
+          controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
+
+          // Simulate LLM inter-token delay (20-30ms per token = ~35 tokens/sec)
+          await new Promise((resolve) =>
+            setTimeout(resolve, 25 + Math.random() * 15)
+          );
+        }
+
+        // Send done signal
+        const executionMs = Date.now() - startTime;
+        const done = JSON.stringify({
+          done: true,
+          totalTokens: tokens.length,
+          executionMs,
+          fluidComputeExplanation: {
+            activeComputeMs: Math.round(executionMs * 0.04), // ~4% active CPU
+            waitingMs: Math.round(executionMs * 0.96),       // ~96% waiting on "LLM"
+            traditionalCost: `$${((executionMs / 1000) * 0.00001667).toFixed(6)}`,
+            fluidCost: `$${((executionMs * 0.04 / 1000) * 0.00001667).toFixed(6)}`,
+            savings: "~96%",
+          },
+        });
+        controller.enqueue(encoder.encode(`data: ${done}\n\n`));
+        controller.close();
+      },
+    });
+
+    return new NextResponse(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+        "X-Compute-Layer": "serverless-function",
+        "X-Fluid-Compute": "enabled",
+        "X-Runtime": "nodejs",
+      },
+    });
+  } catch (error) {
+    console.error("[AI-SUMMARY] Error:", error);
+    return NextResponse.json({ error: "AI generation failed" }, { status: 500 });
+  }
+}
+
+function generateDemoSummary(article: string): string {
+  const topics = [
+    "Vercel's Fluid Compute",
+    "Next.js rendering strategies",
+    "Edge Functions vs Serverless",
+    "ISR performance benefits",
+    "AI streaming patterns",
+  ];
+
+  const topic = topics[Math.floor(Math.random() * topics.length)];
+
+  return `📋 AI Summary (Streaming Demo):
+
+• Key insight: ${topic} fundamentally changes how developers think about deployment architecture by separating compute from infrastructure concerns.
+
+• Developer impact: Teams adopting this pattern report 60-85% reduction in infrastructure costs, with median response times dropping from 800ms to under 100ms for cached routes.
+
+• What this means for you: Start by identifying which of your routes are truly static (SSG), which need fresh data every N seconds (ISR), which need per-request logic (SSR/Serverless), and which are lightweight enough for the Edge. Most apps can migrate 70-80% of their traffic to static or ISR, dramatically reducing costs.
+
+[Powered by Vercel AI SDK + Fluid Compute — ${new Date().toLocaleDateString()}]`;
+}
