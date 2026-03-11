@@ -67,11 +67,18 @@ export function middleware(request: NextRequest) {
   // TASK 2: GEO DETECTION
   // Vercel injects geo data into every edge request for FREE.
   // We stamp it as a request header so our pages/APIs can read it.
-  // This data is available at request.geo in the middleware.
+  // NOTE:
+  // The NextRequest TypeScript type no longer includes `geo`
+  // because not all platforms support it. However, Vercel
+  // still provides it at runtime inside the Edge network.
+  // We cast to `any` to access it safely.
   // ─────────────────────────────────────────────────────────
-  const country = request.geo?.country || "US";
-  const city = request.geo?.city || "Unknown";
-  const region = request.geo?.region || "Unknown";
+
+  const geo = (request as any).geo || {};
+
+  const country = geo.country || "US";
+  const city = geo.city || "Unknown";
+  const region = geo.region || "Unknown";
 
   const response = NextResponse.next();
 
